@@ -72,9 +72,9 @@ class VLM(PreTrainedModel):
     def merge_input_ids_with_image_features(self, image_features, inputs_embeds, input_ids):
         
         num_images, num_image_patches, embed_dim = image_features.shape
-        batch_indices, iamge_indices = torch.where(input_ids == self.tokenizer('<|image_pad|>')['input_ids'][0])
+        batch_indices, image_indices = torch.where(input_ids == self.tokenizer('<|image_pad|>')['input_ids'][0])
         
-        inputs_embeds[batch_indices, iamge_indices] = image_features.view(-1, embed_dim)
+        inputs_embeds[batch_indices, image_indices] = image_features.view(-1, embed_dim)
         
         return inputs_embeds
     
