@@ -14,12 +14,12 @@ https://hf-mirror.com/google/siglip-so400m-patch14-384
 ### 下载数据集
 1、预训练数据：\
 图片数据：\
-https://hf-mirror.com/datasets/liuhaotian/LLaVA-CC3M-Pretrain-595K\
+https://hf-mirror.com/datasets/liuhaotian/LLaVA-CC3M-Pretrain-595K \
 中文文本数据：\
 https://hf-mirror.com/datasets/LinkSoul/Chinese-LLaVA-Vision-Instructions
 2、SFT数据:\
 图片数据:\
-https://hf-mirror.com/datasets/jingyaogong/minimind-v_dataset\
+https://hf-mirror.com/datasets/jingyaogong/minimind-v_dataset \
 中文文本数据:\
 https://hf-mirror.com/datasets/LinkSoul/Chinese-LLaVA-Vision-Instructions
 
