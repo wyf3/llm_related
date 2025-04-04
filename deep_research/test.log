@@ -1,0 +1,68 @@
+2025-04-04 16:07:25,268 - search_mcp - INFO - 
+Connected to server with tools: ['search', 'get_images']
+2025-04-04 16:07:25,277 - search_mcp - INFO - 
+MCP Client Started!
+2025-04-04 16:07:25,279 - search_mcp - INFO - Type your queries or 'quit' to exit.
+2025-04-04 16:07:51,186 - search_mcp - INFO - available_tools:
+
+[{'type': 'function', 'function': {'name': 'search', 'description': '互联网搜索', 'parameters': {'properties': {'query': {'title': 'Query', 'type': 'string'}}, 'required': ['query'], 'title': 'searchArguments', 'type': 'object'}}}, {'type': 'function', 'function': {'name': 'get_images', 'description': '获取图片链接和描述', 'parameters': {'properties': {'query': {'title': 'Query', 'type': 'string'}}, 'required': ['query'], 'title': 'get_imagesArguments', 'type': 'object'}}}]
+2025-04-04 16:07:58,424 - search_mcp - INFO - llm_output(tool call)：为了撰写关于大模型MCP协议的报告并配上插图，我将按照以下步骤进行：
+
+1. **搜索MCP协议的相关信息**：首先，我需要了解MCP协议的基本概念、应用场景和技术细节。这将帮助我撰写报告的内容。
+
+2. **获取相关插图**：在撰写报告的同时，我需要获取与MCP协议相关的图片，以便更好地解释和展示协议的内容。
+
+我将首先使用`search`工具来搜索MCP协议的相关信息。
+
+```json
+{"name": "search", "params": {"query": "大模型MCP协议 2025"}}
+```
+2025-04-04 16:08:01,079 - __main__ - INFO - 
+=== Iteration 1 ===
+2025-04-04 16:08:13,145 - __main__ - INFO - Aggregated 6 unique links from this iteration.
+2025-04-04 16:08:13,150 - __main__ - INFO - Fetching content from: https://baijiahao.baidu.com/s?id=1827543504174294111&wfr=spider&for=pc
+2025-04-04 16:08:19,434 - __main__ - INFO - Page usefulness for https://baijiahao.baidu.com/s?id=1827543504174294111&wfr=spider&for=pc: Yes
+2025-04-04 16:08:30,436 - __main__ - INFO - Extracted context from https://baijiahao.baidu.com/s?id=1827543504174294111&wfr=spider&for=pc (first 200 chars): The webpage provides detailed information on the Model Context Protocol (MCP) as of 2025, including its technical aspects and industry applications. Here are the relevant details:
+
+1. **MCP Developmen
+2025-04-04 16:08:30,444 - __main__ - INFO - Fetching content from: https://blog.csdn.net/monsion/article/details/146855599
+2025-04-04 16:08:36,725 - __main__ - INFO - Page usefulness for https://blog.csdn.net/monsion/article/details/146855599: Yes
+2025-04-04 16:08:52,693 - __main__ - INFO - Extracted context from https://blog.csdn.net/monsion/article/details/146855599 (first 200 chars): 大模型MCP协议（Model Context Protocol）是由Anthropic公司于2024年11月推出的一种开放标准，旨在统一大型语言模型（LLM）与外部数据源和工具之间的通信协议。MCP通过标准化接口、生态丰富、平台无关性、数据安全性和可扩展性等核心价值，解决了AI模型与外部系统交互中的兼容性、安全性和复杂性问题。2025年3月26日，MCP规范发布了新版本，主要更新包括基于OAuth
+2025-04-04 16:08:52,701 - __main__ - INFO - Fetching content from: https://blog.csdn.net/weixin_61514920/article/details/146687846
+2025-04-04 16:08:59,214 - __main__ - INFO - Page usefulness for https://blog.csdn.net/weixin_61514920/article/details/146687846: Yes
+2025-04-04 16:09:09,017 - __main__ - INFO - Extracted context from https://blog.csdn.net/weixin_61514920/article/details/146687846 (first 200 chars): The webpage discusses the Model Context Protocol (MCP), particularly its applications and developments expected by 2025. Here are the summarized details relevant to the user's query regarding "大模型MCP协
+2025-04-04 16:09:09,022 - __main__ - INFO - Fetching content from: https://m.sohu.com/a/877695960_121924584
+2025-04-04 16:09:15,942 - __main__ - INFO - Page usefulness for https://m.sohu.com/a/877695960_121924584: Yes
+2025-04-04 16:09:23,494 - __main__ - INFO - Extracted context from https://m.sohu.com/a/877695960_121924584 (first 200 chars): 大模型MCP协议在2025年的最新进展中，MCP协议被认为是行业的重要里程碑。作为连接智能体与人、环境的重要桥梁，MCP协议的标准化与安全性将深刻影响未来AI技术的发展。它不仅可以降低开发门槛，还将为多模型的无缝协作提供基础支持，推动AI能力的指数级增长。
+2025-04-04 16:09:23,501 - __main__ - INFO - Fetching content from: https://new.qq.com/rain/a/20250330A06YHG00
+2025-04-04 16:09:58,597 - __main__ - INFO - Page usefulness for https://new.qq.com/rain/a/20250330A06YHG00: No
+2025-04-04 16:09:58,601 - __main__ - INFO - Fetching content from: https://www.163.com/dy/article/JOPHDL3L0538AWSX.html
+2025-04-04 16:10:04,031 - __main__ - INFO - Page usefulness for https://www.163.com/dy/article/JOPHDL3L0538AWSX.html: No
+2025-04-04 16:10:06,212 - __main__ - INFO - LLM did not provide any new search queries. Ending the loop.
+2025-04-04 16:10:06,221 - search_mcp - INFO - tool name: 
+search
+tool call result: 
+meta=None content=[TextContent(type='text', text='The webpage provides detailed information on the Model Context Protocol (MCP) as of 2025, including its technical aspects and industry applications. Here are the relevant details:\n\n1. **MCP Development Background**:\n   - Early language models like GPT-2 relied on static training data, leading to "data silos."\n   - In November 2024, Anthropic introduced MCP to standardize AI interactions with external systems, inspired by the Language Server Protocol (LSP).\n\n2. **MCP Overview**:\n   - MCP is an open protocol using a client-server architecture to connect AI models with external resources.\n   - Core design principles include modularity, security, and interoperability.\n\n3. **MCP Server Core Functions**:\n   - **Tools**: Encapsulate external services as callable functions (e.g., SQL queries, email sending).\n   - **Resources**: Expose structured data like database records or API data.\n   - **Prompts**: Predefined task templates and workflows to reduce development complexity.\n\n4. **MCP Protocol Specification**:\n   - **Communication Protocol**: Layered design supporting HTTP/2, WebSocket, and gRPC.\n   - **Data Layer**: Uses Protobuf for strong-type schema.\n   - **Security Layer**: Implements OAuth 2.0 and end-to-end encryption (E2EE), with support for SM4 algorithm in enterprise deployments.\n\n5. **Developer Practical Guide**:\n   - Steps to set up a minimal MCP server using Python, including installation, tool service definition, server startup, and client invocation.\n\n6. **Impact and Future Trends**:\n   - **Technical Value**: Enhances development efficiency, ensures security, and fosters ecosystem collaboration.\n   - **Future Trends**: Expansion to multimodal devices (e.g., AR glasses) and deployment on mobile devices with lightweight models like DeepSeek-R1-Zero.\n\nThese points directly address the user\'s query about the latest technical details of the MCP protocol in 2025.\n\n大模型MCP协议（Model Context Protocol）是由Anthropic公司于2024年11月推出的一种开放标准，旨在统一大型语言模型（LLM）与外部数据源和工具之间的通信协议。MCP通过标准化接口、生态丰富、平台无关性、数据安全性和可扩展性等核心价值，解决了AI模型与外部系统交互中的兼容性、安全性和复杂性问题。2025年3月26日，MCP规范发布了新版本，主要更新包括基于OAuth 2.1的身份验证框架、用Streamable HTTP传输取代HTTP+SSE传输方式，以及采用更加标准化的数据访问接口，进一步增强了MCP的安全性和性能。MCP的技术架构遵循客户端-服务器模型，包含MCP Hosts、MCP Clients、MCP Servers、本地数据源和远程服务等核心组件，支持本地通信和远程通信两种机制，使用JSON-RPC 2.0格式进行消息传输。MCP的应用场景广泛，包括数据与文件系统、开发工具、网络与浏览器自动化、生产力和通信、AI与专业工具等领域，支持的工具和服务包括Git、GitHub、Google Maps、PostgreSQL、Slack等。\n\nThe webpage discusses the Model Context Protocol (MCP), particularly its applications and developments expected by 2025. Here are the summarized details relevant to the user\'s query regarding "大模型MCP协议 2025 应用场景":\n\n1. **智能助手与知识管理**: MCP enables models like Claude to interact with user data sources, offering personalized services.\n2. **客户服务与自动化**: Integration with CRM systems allows automated customer service, enhancing efficiency by accessing real-time customer information.\n3. **内容创作与编辑**: MCP supports tools that assist in content generation and editing, streamlining creative processes.\n4. **软件开发与调试**: Developers can enhance coding environments with functionalities like auto-completion, error detection, and repair suggestions through MCP-enabled tools.\n\nThese applications leverage MCP\'s standardized communication protocol to enhance interaction between AI models and external data/tools, aiming for improved functionality and user experience in various sectors.\n\n大模型MCP协议在2025年的最新进展中，MCP协议被认为是行业的重要里程碑。作为连接智能体与人、环境的重要桥梁，MCP协议的标准化与安全性将深刻影响未来AI技术的发展。它不仅可以降低开发门槛，还将为多模型的无缝协作提供基础支持，推动AI能力的指数级增长。', annotations=None)] isError=False
+2025-04-04 16:10:12,223 - search_mcp - INFO - llm_output：
+根据已经获取的信息，我们可以撰写一篇关于大模型MCP协议的报告，内容涵盖了MCP协议的背景、核心功能、技术架构、应用场景以及未来发展趋势。然而，用户还要求报告配上插图，而目前我们尚未获取相关的图片资源。
+
+因此，我们需要调用`get_images`工具来获取与MCP协议相关的插图，以完善报告。
+
+```json
+{"name": "get_images", "params": {"query": "大模型MCP协议 2025"}}
+```
+2025-04-04 16:10:12,233 - __main__ - INFO - Searching for images for query: 大模型MCP协议 2025
+2025-04-04 16:10:15,254 - __main__ - INFO - Fetching image description for: https://modelcontextprotocol.info/images/blog/20250319/img2.webp
+2025-04-04 16:10:19,270 - __main__ - INFO - Image description for https://modelcontextprotocol.info/images/blog/20250319/img2.webp: 图片展示了MCP（Multi-Client Protocol）架构的示意图，包括MCP客户端、服务器、远程服务、本地数据源以及与Claude等主机的连接关系。
+2025-04-04 16:10:19,275 - __main__ - INFO - Fetching image description for: https://developer.qcloudimg.com/http-save/yehe-3089065/ac6a5560fddb5847febfb1355f814c59.webp
+2025-04-04 16:10:24,879 - __main__ - INFO - Image description for https://developer.qcloudimg.com/http-save/yehe-3089065/ac6a5560fddb5847febfb1355f814c59.webp: 图片展示了一段对话，内容是关于查询数据库中金额最高的订单信息的过程，最终结果显示订单号为2，订单日期为2025年1月6日，订单金额为200.50，客户姓名为Jane Smith。
+2025-04-04 16:10:24,888 - search_mcp - INFO - tool name: 
+get_images
+tool call result: 
+meta=None content=[TextContent(type='text', text='{"https://modelcontextprotocol.info/images/blog/20250319/img2.webp": "\\u56fe\\u7247\\u5c55\\u793a\\u4e86MCP\\uff08Multi-Client Protocol\\uff09\\u67b6\\u6784\\u7684\\u793a\\u610f\\u56fe\\uff0c\\u5305\\u62ecMCP\\u5ba2\\u6237\\u7aef\\u3001\\u670d\\u52a1\\u5668\\u3001\\u8fdc\\u7a0b\\u670d\\u52a1\\u3001\\u672c\\u5730\\u6570\\u636e\\u6e90\\u4ee5\\u53ca\\u4e0eClaude\\u7b49\\u4e3b\\u673a\\u7684\\u8fde\\u63a5\\u5173\\u7cfb\\u3002", "https://developer.qcloudimg.com/http-save/yehe-3089065/ac6a5560fddb5847febfb1355f814c59.webp": "\\u56fe\\u7247\\u5c55\\u793a\\u4e86\\u4e00\\u6bb5\\u5bf9\\u8bdd\\uff0c\\u5185\\u5bb9\\u662f\\u5173\\u4e8e\\u67e5\\u8be2\\u6570\\u636e\\u5e93\\u4e2d\\u91d1\\u989d\\u6700\\u9ad8\\u7684\\u8ba2\\u5355\\u4fe1\\u606f\\u7684\\u8fc7\\u7a0b\\uff0c\\u6700\\u7ec8\\u7ed3\\u679c\\u663e\\u793a\\u8ba2\\u5355\\u53f7\\u4e3a2\\uff0c\\u8ba2\\u5355\\u65e5\\u671f\\u4e3a2025\\u5e741\\u67086\\u65e5\\uff0c\\u8ba2\\u5355\\u91d1\\u989d\\u4e3a200.50\\uff0c\\u5ba2\\u6237\\u59d3\\u540d\\u4e3aJane Smith\\u3002"}', annotations=None)] isError=False
+2025-04-04 16:10:29,154 - search_mcp - INFO - llm_output：
+根据已经获取的信息，我们具备了撰写一篇关于大模型MCP协议的完整报告所需的内容，包括MCP协议的背景、核心功能、技术架构、应用场景以及未来发展趋势。此外，通过工具调用，我们还获得了与MCP协议相关的插图，例如MCP架构的示意图以及与MCP协议交互的场景图。
+
+因此，结合已有的文字内容和插图资源，已经完全能够满足用户的需求。以下是最终的判断：
+
+<finish>
