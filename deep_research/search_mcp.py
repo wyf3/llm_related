@@ -126,13 +126,14 @@ def get_new_search_queries(user_query, previous_search_queries, all_contexts):
     return []
 
 
-def web_search(query: str, ) -> str:
+# Reorganized this function, integrated get_images calls, and set top_k as a parameter
+def web_search(query: str, top_k: int = 2, categories: str = 'general') -> str:
     
     links = []
-    response = requests.get(f'http://10.250.2.24:8088/search?format=json&q={query}&language=zh-CN&time_range=&safesearch=0&categories=general', timeout=10)
+    response = requests.get(f'http://10.250.2.24:8088/search?format=json&q={query}&language=zh-CN&time_range=&safesearch=0&categories={categories}', timeout=10)
     results = response.json()['results']
-    for result in results[:2]:
-        links.append(result['url'])
+    for result in results[:top_k]:
+        links.append(result['url' if categories == 'general' else 'img_src' if categories == 'images' else ''])
     
     return links
     
@@ -204,17 +205,20 @@ def search(query: str) -> str:
     
     new_search_queries = eval(generate_query(query))
     all_search_queries.extend(new_search_queries)
+    # add the original query to the search queries in case it is not already in the list
+    if query not in all_search_queries:
+        all_search_queries.append(query)
     while iteration < iteration_limit:
             logger.info(f"\n=== Iteration {iteration + 1} ===")
             iteration_contexts = []
-            search_results = [web_search(query) for query in new_search_queries]
+            search_results = [web_search(query, top_k=2, categories='general') for query in new_search_queries]
 
             unique_links = {}
             for idx, links in enumerate(search_results):
-                query = new_search_queries[idx]
+                search_query = new_search_queries[idx]  # prevent the query being replaced as the Search parameter
                 for link in links:
                     if link not in unique_links:
-                        unique_links[link] = query
+                        unique_links[link] = search_query
 
             logger.info(f"Aggregated {len(unique_links)} unique links from this iteration.")
 
@@ -247,16 +251,14 @@ def search(query: str) -> str:
 
             iteration += 1
     return '\n\n'.join(aggregated_contexts)
+
 @mcp.tool()
 def get_images(query: str) -> str:
     '''获取图片链接和描述'''
     logger.info(f"Searching for images for query: {query}")
-    response = requests.get(f'http://10.250.2.24:8088/search?format=json&q={query}&language=zh-CN&time_range=month&safesearch=0&categories=images')
-    results = response.json()['results']
-    img_srcs = []
-    for result in results[:2]:
-        img_srcs.append(result['img_src'])
-    
+    # Get image links directly through web_search function
+    img_srcs = web_search(query, top_k=2, categories='images')
+
     result = {}
     
     for img_src in img_srcs:
