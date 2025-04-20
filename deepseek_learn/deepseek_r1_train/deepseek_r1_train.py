@@ -58,7 +58,7 @@ def digit_reward(completions, **kwargs):
 
 # 格式奖励
 def hard_format_reward(completions, **kwargs):
-    pattern = r"^<think>\n.*?n</think>\n<answer>\n.*?\n</answer>\n$"
+    pattern = r"^<think>\n.*?\n</think>\n<answer>\n.*?\n</answer>\n$"
     responses = [completion[0]["content"] for completion in completions]
     matches = [re.match(pattern, response) for response in responses]
     return [0.5 if match else 0.0 for match in matches]
