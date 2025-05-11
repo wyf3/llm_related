@@ -318,7 +318,6 @@ class GRPOTrainer:
     
     def train_step(self, model, inputs, optimizer, step):
         model.train()
-        optimizer.zero_grad()
         # scaler = torch.amp.GradScaler()
         # with torch.amp.autocast(device_type='cuda'):
         loss = self.compute_loss(model, inputs)
@@ -328,6 +327,7 @@ class GRPOTrainer:
         if (step + 1) % self.args.gradient_accumulation_steps == 0:
             
             optimizer.step()
+            optimizer.zero_grad()
             # scaler.unscale_(optimizer)
             # scaler.step(optimizer)
             # scaler.update()
