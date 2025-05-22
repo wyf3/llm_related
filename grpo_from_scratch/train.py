@@ -299,7 +299,11 @@ class GRPOTrainer:
         per_token_loss = per_token_loss * action_mask
         if self.args.beta != 0.0:
             per_token_loss = per_token_loss + self.args.beta * k3
-        loss = per_token_loss.sum() / action_mask.sum()
+        
+        loss = per_token_loss.sum(dim=1) / action_mask.sum(dim=1) # shape: [batch_size * num_generations]
+        loss = loss.mean()
+        
+        # loss = per_token_loss.sum() / action_mask.sum()
         
         return loss
 
