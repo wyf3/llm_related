@@ -234,14 +234,14 @@ class LLM(PreTrainedModel):
         self.vocab_size = self.config.vocab_size
         self.n_layers = self.config.n_layers
 
-        self.tokon_embeddings = nn.Embedding(self.config.vocab_size, self.config.hidden_size)
+        self.token_embeddings = nn.Embedding(self.config.vocab_size, self.config.hidden_size)
         self.dropout = nn.Dropout(self.config.dropout) 
         self.layers = torch.nn.ModuleList() 
         for layer_idx in range(self.n_layers):
             self.layers.append(DecoderLayer(self.config, layer_idx)) 
         self.norm = RMSNorm(self.config.hidden_size)
         self.output = nn.Linear(self.config.hidden_size, self.config.vocab_size, bias=False) 
-        self.tokon_embeddings.weight = self.output.weight
+        self.token_embeddings.weight = self.output.weight
         self.apply(self._init_weights) 
         self.loss = None 
         
@@ -260,7 +260,7 @@ class LLM(PreTrainedModel):
         
     def forward(self, input_ids, labels, use_kv_cache=False):
        
-        hidden_states = self.tokon_embeddings(input_ids) 
+        hidden_states = self.token_embeddings(input_ids) 
         hidden_states = self.dropout(hidden_states)  
         for idx, layer in enumerate(self.layers):
             hidden_states = layer(hidden_states, use_kv_cache=use_kv_cache)  
