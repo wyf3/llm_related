@@ -2,7 +2,7 @@ import re
 import random
 from openai import OpenAI
 
-client = OpenAI(base_url='http://***/v1', api_key='**')
+client = OpenAI(base_url='http://***/v1', api_key='***')
 def get_llm_output(prompt):
     
     messages = [
@@ -94,42 +94,91 @@ def is_valid_sequence(content):
 def answer_reward(user_message, answer):
     prompt = '''
     ## 任务目标
-    判断答案是否满足问题要求
+    根据执行过程判断是否成功解决问题
     
     ## 任务要求
+    - 认真审视执行过程，做出正确的判断
     - 只输出是或否，不要输出多余内容
     
     ## 问题
     {}
     
-    ## 答案
+    ## 执行过程
     {}'''
     
     result = get_llm_output(prompt.format(user_message, answer))
     if result == '是':
         return 1
     else:
-        return 0
+        return -1
+
+
+
+def exec_code(code: str) -> str:
+    import requests
+    
+    url = 'http://10.250.2.24:8090/run_code'
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'code': code,
+        'language': 'python'
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+    stdout = response.json()['run_result']['stdout']
+    stderr = response.json()['run_result']['stderr']
+    print(stdout, stderr)
+    return stdout[:1000], stderr[:1000]
+
+
+def extract_code(text: str)-> str:
+        
+    code_block_pattern = re.compile(r'<code>(.*?)</code>', re.DOTALL)
+
+    # Find all matches in the text
+    code_blocks = code_block_pattern.findall(text)
+
+    # If no code blocks are found, try to find indented code blocks
+    if not code_blocks:
+        return []
+    return code_blocks
+    
+def code_result(solution_str):
+    code_blocks = extract_code(solution_str)
+    if not code_blocks:
+        return '', ''
+    code = code_blocks[-1]
+    stdout, stderr = exec_code(code)
+    return stdout, stderr
+    
     
 
 def compute_score(data_source, solution_str, ground_truth, extra_info=None):
     
     is_valid, _ = is_valid_sequence(solution_str)
     if is_valid:
-        answer = extract_answer(solution_str)
-        print(answer)
-        user_message = extra_info['user_message']
-        print(user_message)
-        answer_score = answer_reward(user_message, answer)
-        format_score = 0.5
-        return answer_score + format_score
+        score = 0.5
+        stdout, stderr = code_result(solution_str)
+        if 'error' in stderr.lower() or 'traceback' in stderr.lower():
+            score -= 0.5
+        else:
+            score += 0.5
+            user_message = extra_info['user_message']
+            score += answer_reward(user_message, solution_str)
+        print('+++++++++++++++++++++++++++++')
+        print(solution_str)
+        print('+++++++++++++++++++++++++++++')
+        return score
     else:
-        
         format_score = 0
         
         if solution_str.startswith('<think>'):
             format_score += 0.1
-            
+        if solution_str.endswith('</answer>'):
+            format_score += 0.1
+        
         if '</think><answer>' in solution_str.replace('\n', ''):
             format_score += 0.1
         
@@ -141,5 +190,5 @@ def compute_score(data_source, solution_str, ground_truth, extra_info=None):
         
         if '<answer>' in solution_str and '</answer>' in solution_str:
             format_score += 0.02
-            
+        
         return format_score
