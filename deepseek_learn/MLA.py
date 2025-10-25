@@ -101,10 +101,10 @@ class MLA(nn.Module):
             self.register_buffer('pe_cache', torch.zeros(self.max_batch_size, self.max_seq_len, self.qk_rope_head_dim), persistent=False)
             
         
-    def forward(self, x, mask=None):
+    def forward(self, x, start_pos: int, mask=None):
         
         bs, seq_len, _ = x.shape
-        
+        end_pos = start_pos + seqlen
         q = self.wq_a(x)  # [bs, seq_len, q_lora_rank]
         q = self.q_norm(q) # [bs, seq_len, q_lora_rank]
         q = self.wq_b(q) # [bs, seq_len, n_heads * qk_head_dim]
@@ -127,8 +127,8 @@ class MLA(nn.Module):
             
             k = torch.cat([k_nope, k_pe.expand(-1,-1,self.n_heads,-1)], dim=-1) 
             # k shape:[bs, seq_len, n_heads, qk_head_dim]
-            self.k_cache[:bs, :seq_len, :, :] = k
-            self.v_cache[:bs, :seq_len, :, :] = v
+            self.k_cache[:bs, start_pos:end_pos, :, :] = k
+            self.v_cache[:bs, start_pos:end_pos, :, :] = v
             # scores = torch.einsum("bshd,bthd->bsht", q, self.k_cache[:bs, :seq_len]) / math.sqrt(self.qk_nope_head_dim + self.qk_rope_head_dim)
             scores = torch.matmul(q.transpose(1, 2), self.k_cache[:bs, :seq_len, :, :].transpose(1, 2).transpose(2, 3) / math.sqrt(self.qk_nope_head_dim + self.qk_rope_head_dim))
             scores = scores.transpose(1, 2)
@@ -141,8 +141,8 @@ class MLA(nn.Module):
             # q*k(T) = x*wq*(c*wkv_b[:, :self.qk_nope_head_dim])(T) = x*wq*wkv_b[:, :self.qk_nope_head_dim](T)*c(T)    c为压缩后的kv
             # wq*wkv_b[:, :self.qk_nope_head_dim](T)作为q的投影矩阵  c可以替代原先的k，这样就可以直接使用压缩后的kv计算注意力了，kv_caceh时也只需存储压缩后的kv
             kv = self.kv_norm(kv)
-            self.kv_cache[:bs, :seq_len, :] = kv # kv shape:[bs, seq_len, kv_lora_rank]
-            self.pe_cache[:bs, :seq_len, :] = k_pe # k_pe shape:[bs, seq_len, qk_rope_head_dim]
+            self.kv_cache[:bs, start_pos:end_pos, :] = kv # kv shape:[bs, seq_len, kv_lora_rank]
+            self.pe_cache[:bs, start_pos:end_pos, :] = k_pe # k_pe shape:[bs, seq_len, qk_rope_head_dim]
             
             scores_nope = torch.einsum("bshc,btc->bsht", q_nope, self.kv_cache[:bs, :seq_len, :]) # bshc btc -> bshc bct -> bsht
             scores_pe = torch.einsum("bshr,btr->bsht", q_pe, self.pe_cache[:bs, :seq_len, :])  # bshr btr -> bshr bt1r -> bshr bthr -> bsht

@@ -96,6 +96,7 @@ def execute_node(state: State):
                 tool_args = tool_call['args']
                 tool_result = tools[tool_name].invoke(tool_args)
                 logger.info(f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}")
+                messages += [AIMessage(content=extract_answer(response['content']))]
                 messages += [ToolMessage(content=f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}", tool_call_id=tool_call['id'])]
         
         elif '<tool_call>' in response['content']:
@@ -107,17 +108,14 @@ def execute_node(state: State):
             tool_args = tool_call['args']
             tool_result = tools[tool_name].invoke(tool_args)
             logger.info(f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}")
-            messages += [ToolMessage(content=f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}", tool_call_id=tool_call['id'])]
+            messages += [AIMessage(content=extract_answer(response['content']))]
+            messages += [HumanMessage(content=f"tool_result:{tool_result}")] 
         else:    
             break
         
     logger.info(f"当前STEP执行总结:{extract_answer(response['content'])}")
-    
     state['messages'] += [AIMessage(content=extract_answer(response['content']))]
-    if tool_result:
-        state['observations'] += [ToolMessage(content=f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}", tool_call_id=tool_call['id'])]
     state['observations'] += [AIMessage(content=extract_answer(response['content']))]
-    
     return Command(goto='update_planner', update={'plan': plan})
     
 
@@ -140,7 +138,20 @@ def report_node(state: State):
                 tool_args = tool_call['args']
                 tool_result = tools[tool_name].invoke(tool_args)
                 logger.info(f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}")
+                messages += [AIMessage(content=extract_answer(response['content']))]
                 messages += [ToolMessage(content=f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}", tool_call_id=tool_call['id'])]
+                
+        elif '<tool_call>' in response['content']:
+            tool_call = response['content'].split('<tool_call>')[-1].split('</tool_call>')[0].strip()
+            
+            tool_call = json.loads(tool_call)
+            
+            tool_name = tool_call['name']
+            tool_args = tool_call['args']
+            tool_result = tools[tool_name].invoke(tool_args)
+            logger.info(f"tool_name:{tool_name},tool_args:{tool_args}\ntool_result:{tool_result}")
+            messages += [AIMessage(content=extract_answer(response['content']))]
+            messages += [HumanMessage(content=f"tool_result:{tool_result}")] 
         else:
             break
             
