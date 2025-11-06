@@ -76,7 +76,7 @@ class SFTDataset(Dataset):
                 messages.append({'role': 'assistant', 'content': i[1]})
         
         messages.append({'role': 'user', 'content': query})   
-        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False) 
+        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True) 
         prompt_input_ids = self.tokenizer.encode(prompt)
         answer_input_ids = self.tokenizer.encode(answer)
         input_ids = prompt_input_ids + answer_input_ids

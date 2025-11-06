@@ -37,7 +37,7 @@ class SFTDataset(Dataset):
         answer = output_text + self.tokenizer.eos_token
         messages = []
         messages.append({'role': 'user', 'content': query})   
-        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False) 
+        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True) 
         
         prompt_input_ids = self.tokenizer.encode(prompt)
         answer_input_ids = self.tokenizer.encode(answer)
