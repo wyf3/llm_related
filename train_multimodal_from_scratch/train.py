@@ -105,7 +105,7 @@ class MyDataset(Dataset):
             q_input_ids = self.tokenizer(q_text)['input_ids']
             a_input_ids = self.tokenizer(a_text)['input_ids']
             input_ids = q_input_ids + a_input_ids
-            labels = [tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
+            labels = [self.tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
             input_ids = input_ids[:-1]
             labels = labels[1:]
         
@@ -122,7 +122,7 @@ class MyDataset(Dataset):
             q_input_ids = self.tokenizer(q_text)['input_ids']
             a_input_ids = self.tokenizer(a_text)['input_ids']
             input_ids = q_input_ids + a_input_ids
-            labels = [tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
+            labels = [self.tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
             input_ids = input_ids[:-1]
             labels = labels[1:]
         
