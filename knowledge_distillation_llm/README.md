@@ -45,3 +45,9 @@ qwen2.5-3b作为教师模型，qwen2.5-0.5b作为学生模型\
 3.2 偏向前向kl散度\
 损失下降异常，效果很差，不断重复输出。\
 由于资源和时间的限制，所有测试均保持相同的超参数，未针对不同损失设置不同超参数。
+
+## on policy disillation
+### 直接优化kl散度
+python on_policy_distillation_train.py
+### rl
+python on_policy_distillation_train_rl.py

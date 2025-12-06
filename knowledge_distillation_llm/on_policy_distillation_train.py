@@ -5,8 +5,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import Trainer, TrainingArguments
-from dataset import SFTDataset
-from utils import compute_fkl, compute_rkl, compute_skewed_fkl, compute_skewed_rkl
+from dataset import SFTDataset, OnPolicyDataset
+from utils import compute_rkl
+
 
 
 class KGTrainer(Trainer):
@@ -15,7 +16,6 @@ class KGTrainer(Trainer):
         self,
         model = None,
         teacher_model = None,
-        if_use_entropy = False,
         args = None,
         data_collator = None, 
         train_dataset = None,
@@ -41,43 +41,58 @@ class KGTrainer(Trainer):
             preprocess_logits_for_metrics=preprocess_logits_for_metrics,
         )
         self.teacher_model = teacher_model
-        self.if_use_entropy = if_use_entropy
+
+    
+    
+    @torch.no_grad()
+    def generate_sequences(self, input_ids, attention_mask):
         
+        self.model.eval()
+        sequences = self.model.generate(input_ids=input_ids, 
+                                      attention_mask=attention_mask,
+                                      max_length=1024,
+                                      do_sample=True,
+                                      temperature=1.0,
+                                      pad_token_id=self.tokenizer.pad_token_id,
+                                      eos_token_id=self.tokenizer.eos_token_id
+                                      )
+        
+        
+        
+        self.model.train()
+        return sequences
     
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         
-        outputs = model(**inputs)
+        prompt_ids = inputs["input_ids"].to(self.model.device)
+        prompt_mask = inputs["attention_mask"].to(self.model.device)
+        sequences = self.generate_sequences(prompt_ids, prompt_mask)
+        attention_mask = (sequences != self.tokenizer.pad_token_id).long()
+        logits = model(sequences, attention_mask=attention_mask).logits[:, prompt_ids.shape[-1]:]
+        
+        loss = None
         with torch.no_grad():
-            teacher_outputs = self.teacher_model(**inputs)
+            teacher_outputs = self.teacher_model(sequences, attention_mask=attention_mask)
         
-        loss = outputs.loss
-        logits = outputs.logits
-        teacher_logits = teacher_outputs.logits
+        teacher_logits = teacher_outputs.logits[:, prompt_ids.shape[-1]:]
         
-        # 如果教师模型和学生模型输出形状不匹配，对学生模型进行padding或对教师模型进行截断
+        
         if logits.shape[-1] != teacher_logits.shape[-1]:
-            # gap = teacher_logits.shape[-1] - logits.shape[-1]
-            # if gap > 0:
-            #     pad_logits = torch.zeros((logits.shape[0], logits.shape[1], gap)).to(logits.device)
-            #     logits = torch.cat([logits, pad_logits], dim=-1)
-            
+           
             teacher_logits = teacher_logits[:, :, :logits.shape[-1]]
         
-        labels = inputs['labels']
-        kl = compute_fkl(logits, teacher_logits, labels, padding_id=-100, temp=2.0).mean()
+        completion_ids = sequences[:, prompt_ids.shape[-1]:]
+        kl = compute_rkl(logits, teacher_logits, completion_ids, padding_id=self.tokenizer.pad_token_id, reduction="mean")
         
-        if self.if_use_entropy:
-            loss_total = 0.5 * kl + 0.5 * loss
-        else:
-            loss_total = kl
+        loss = kl.mean()
         
-        return (loss_total, outputs) if return_outputs else loss_total
+        return loss
         
 
 if __name__ == '__main__':
     
-    # 学生模型
-    model = AutoModelForCausalLM.from_pretrained("Qwen2.5-0.5B-Instruct")
+    model = AutoModelForCausalLM.from_pretrained("/home/user/Downloads/Qwen2.5-0.5B-Instruct", trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained("/home/user/Downloads/Qwen2.5-0.5B-Instruct", trust_remote_code=True)
     
     lora_config = LoraConfig(
     r=8,  
@@ -90,43 +105,45 @@ if __name__ == '__main__':
     model.cuda()
     print(model.print_trainable_parameters())
     
-    tokenizer = AutoTokenizer.from_pretrained("Qwen2.5-0.5B-Instruct")
+
+    teacher_model = AutoModelForCausalLM.from_pretrained("/home/user/Downloads/Qwen2.5-7B-Instruct", trust_remote_code=True)
     
-    # 教师模型，在给定数据上通过lora微调
-    teacher_model = AutoModelForCausalLM.from_pretrained("Qwen2.5-7B-Instruct")
-    # 是否加载lora模型
-    lora_path = 'qwen2.5_7b/lora/sft'
-    teacher_model = PeftModel.from_pretrained(teacher_model, lora_path)
+    model.cuda()
     teacher_model.cuda()
     teacher_model.eval()
     
-    args = TrainingArguments(output_dir='./results', 
-                            num_train_epochs=10, 
+    
+    train_dataset = OnPolicyDataset('data.json', tokenizer)
+    
+    
+    
+    args = TrainingArguments(output_dir='./outputs', 
+                            num_train_epochs=1, 
                             do_train=True, 
                             per_device_train_batch_size=2,
-                            gradient_accumulation_steps=16,
-                            logging_steps=10,
+                            gradient_accumulation_steps=4,
+                            logging_steps=1,
                             report_to='tensorboard',
                             save_strategy='epoch',
-                            save_total_limit=10,
+                            save_total_limit=3,
                             bf16=True,
-                            learning_rate=0.0005,
+                            learning_rate=0.00001,
                             lr_scheduler_type='cosine',
                             dataloader_num_workers=8,
                             dataloader_pin_memory=True)
     data_collator = DefaultDataCollator()
-    dataset = SFTDataset('data.json', tokenizer=tokenizer, max_seq_len=512)
+    
     trainer = KGTrainer(model=model,
                         teacher_model=teacher_model, 
-                        if_use_entropy = True,
                         args=args, 
-                        train_dataset=dataset, 
+                        train_dataset=train_dataset, 
                         tokenizer=tokenizer, 
                         data_collator=data_collator)
-    # 如果是初次训练resume_from_checkpoint为false，接着checkpoint继续训练，为True
+    
     trainer.train(resume_from_checkpoint=False)
     trainer.save_model('./saves')
     trainer.save_state()
+    
     
       
     

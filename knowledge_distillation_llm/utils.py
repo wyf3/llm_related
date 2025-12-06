@@ -18,10 +18,14 @@ def compute_fkl(
         teacher_log_probs = torch.log_softmax(teacher_logits, -1, dtype=torch.float32)
         kl = (teacher_probs * (teacher_log_probs - log_probs)) 
         kl = kl.sum(-1)
+        pad_mask = target.eq(padding_id)
+        kl = kl.masked_fill_(pad_mask, 0.0)
         if reduction == "sum":
-            pad_mask = target.eq(padding_id)
-            kl = kl.masked_fill_(pad_mask, 0.0)
-            kl = kl.sum()
+            
+            kl = kl.sum(dim=1)
+        
+        elif reduction == "mean":
+            kl = kl.sum(dim=1) / (~pad_mask).sum(dim=1)
 
         return kl
 # 计算反向kl散度
@@ -41,10 +45,14 @@ def compute_rkl(
         teacher_log_probs = torch.log_softmax(teacher_logits, -1, dtype=torch.float32)
         kl = (probs * (log_probs - teacher_log_probs))
         kl = kl.sum(-1)
+        
+        pad_mask = target.eq(padding_id)
+        kl = kl.masked_fill(pad_mask, 0.0)
         if reduction == "sum":
-            pad_mask = target.eq(padding_id)
-            kl = kl.masked_fill_(pad_mask, 0.0)
-            kl = kl.sum()
+            kl = kl.sum(dim=1)
+        elif reduction == "mean":
+            kl = kl.sum(dim=1) / (~pad_mask).sum(dim=1)
+        
         return kl
 
 # 计算偏向前kl散度
@@ -67,10 +75,12 @@ def compute_skewed_fkl(
         teacher_log_probs = torch.log_softmax(teacher_logits, -1, dtype=torch.float32)
         kl = (teacher_probs * (teacher_log_probs - mixed_log_probs))
         kl = kl.sum(-1)
+        pad_mask = target.eq(padding_id)
+        kl = kl.masked_fill_(pad_mask, 0.0)
         if reduction == "sum":
-            pad_mask = target.eq(padding_id)
-            kl = kl.masked_fill_(pad_mask, 0.0)
-            kl = kl.sum()
+            kl = kl.sum(dim=1)
+        elif reduction == "mean":
+            kl = kl.sum(dim=1) / (~pad_mask).sum(dim=1)
 
             
         return kl
@@ -95,10 +105,13 @@ def compute_skewed_rkl(
     kl = (probs * (log_probs - mixed_log_probs))
     kl = kl.sum(-1)
     
+    pad_mask = target.eq(padding_id)
+    kl = kl.masked_fill_(pad_mask, 0.0)
     if reduction == "sum":
-        pad_mask = target.eq(padding_id)
-        kl = kl.masked_fill_(pad_mask, 0.0)
-        kl = kl.sum()
+        
+        kl = kl.sum(dim=1)
+    elif reduction == "mean":
+        kl = kl.sum(dim=1) / (~pad_mask).sum(dim=1)
 
 
     return kl
