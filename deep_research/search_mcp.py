@@ -1,12 +1,9 @@
 from mcp.server.fastmcp import FastMCP
-import pymysql
 import requests
 from openai import OpenAI
-mcp = FastMCP("search")
-import pymysql
-import pandas as pd
-from prompts import *
 import logging
+
+mcp = FastMCP("search")
 
 
 
