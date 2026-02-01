@@ -128,10 +128,10 @@ class Attention(nn.Module):
                                                     dropout_p=self.dropout if self.training else 0.0, 
                                                     is_causal=self.is_causal) 
         else:
-            mask = torch.full((1, 1, self.config.max_seq_len, self.config.max_seq_len), float("-inf"))  # 初始化掩码
+            mask = torch.full((1, 1, self.config.max_seq_len, self.config.max_seq_len), float("-inf"), device=q.device)  # 初始化掩码
             mask = torch.triu(mask, diagonal=1)  # 生成上三角掩码
             scores = torch.matmul(q, k.transpose(2, 3)) / math.sqrt(self.head_dim)  # 计算注意力分数
-            scores = scores + self.mask[:, :, :s, :s]  # 应用掩码
+            scores = scores + mask[:, :, :s, :s]  # 应用掩码
             scores = F.softmax(scores.float(), dim=-1).type_as(q)  # 计算 softmax
             scores = self.attention_dropout(scores)  # 应用注意力 dropout
             output = torch.matmul(scores, v)  # 计算输出

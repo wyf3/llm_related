@@ -45,7 +45,7 @@ class Critic(nn.Module):
         
         hidden_state = self.base_model(input_ids, attention_mask=attention_mask).last_hidden_state
         value_model_output = self.value_head(hidden_state)
-        values = value_model_output.squeeze(-1)[:, -num_actions:]
+        values = value_model_output.squeeze(-1)[:, :-1][:, -num_actions:]
         return values
 
 
