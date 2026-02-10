@@ -199,7 +199,7 @@ def generate_samples(prompts, model, max_length, max_new_tokens, n_samples_per_p
             
         attention_mask = (seqs.ne(pad_token_id)).to(dtype=torch.long)
         ans = seqs[:, input_ids.size(1):]
-        action_mask = (ans.ne(eos_token_id) & ans.ne(pad_token_id)).to(dtype=torch.long)
+        action_mask = ans.ne(pad_token_id).to(dtype=torch.long)
        
 
         samples = Samples(
@@ -221,7 +221,7 @@ def compute_rewards(kl, r, action_mask, kl_ctl, clip_reward_value):
         kl_divergence_estimate = -kl_ctl * kl
         rewards = kl_divergence_estimate
 
-        ends = action_mask.sum(1) + 1
+        ends = action_mask.sum(1)
         
         if not isinstance(clip_reward_value, torch.Tensor):
             clip_reward_value = torch.tensor(clip_reward_value).to(r.device)
