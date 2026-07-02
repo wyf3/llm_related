@@ -55,11 +55,21 @@ class MTP(nn.Module):
         return main_hidden_output, main_head_output
     
     def forward_mtp(self, input_ids, previous_hidden_output, head_index):
+        mtp_input_ids = input_ids[:, head_index + 1:-1]
+        current_hidden_output = previous_hidden_output[:, :mtp_input_ids.size(1), :]
+        input_embed = self.main_model.get_input_embeddings()(mtp_input_ids)
+        mtp_input = torch.cat([current_hidden_output, input_embed], dim=-1)
+        mtp_hidden_output = self.mtp_modules[head_index](mtp_input)
+        mtp_head_output = self.output_head(mtp_hidden_output)
+        
+        return mtp_hidden_output, mtp_head_output
+
+    def forward_mtp_step(self, input_ids, previous_hidden_output, head_index):
         input_embed = self.main_model.get_input_embeddings()(input_ids)
         mtp_input = torch.cat([previous_hidden_output, input_embed], dim=-1)
         mtp_hidden_output = self.mtp_modules[head_index](mtp_input)
         mtp_head_output = self.output_head(mtp_hidden_output)
-        
+
         return mtp_hidden_output, mtp_head_output
     
     
@@ -83,30 +93,37 @@ class MTP(nn.Module):
         with torch.no_grad():
             
             while seq.size(1) < max_length:
-                outputs = self.forward(seq)
                 print(seq.shape)
                 speculative_tokens = []
                 
                 # main模型头生成的token
-                logits = outputs['head_main']
+                main_hidden_output, main_head_output = self.forward_main(seq)
+                logits = main_head_output
                 logits = logits[:, -1, :]
                 probs = torch.softmax(logits, dim=-1)
                 next_token = torch.argmax(probs, dim=-1)
-                speculative_tokens.append(next_token)
+                speculative_tokens.append(next_token.unsqueeze(1))
+                previous_hidden_output = main_hidden_output[:, -1:, :]
+                current_input_ids = next_token.unsqueeze(1)
                 
                 # 汇总mtp头生成的token
                 for i in  range(self.config.predict_tokens_num-1):
-                    logits = outputs[f'mtp_head_{i}']
+                    previous_hidden_output, mtp_head_output = self.forward_mtp_step(
+                        current_input_ids,
+                        previous_hidden_output,
+                        i,
+                    )
+                    logits = mtp_head_output
                     logits = logits[:, -1, :]
                     probs = torch.softmax(logits, dim=-1)
                     next_token = torch.argmax(probs, dim=-1)
                     
-                    speculative_tokens.append(next_token)
+                    speculative_tokens.append(next_token.unsqueeze(1))
+                    current_input_ids = next_token.unsqueeze(1)
                 
                   
                 
-                speculative_tokens = torch.cat(speculative_tokens, dim=-1) # shape: (len)
-                speculative_tokens = speculative_tokens.unsqueeze(0) # shape: (1, len)
+                speculative_tokens = torch.cat(speculative_tokens, dim=-1)
                 
                 # 将新生成的tokens和原始序列拼接
                 all_tokens = torch.cat([seq, speculative_tokens], dim=-1)
@@ -114,29 +131,30 @@ class MTP(nn.Module):
                 # 将新序列输入main模型(验证模型)进行验证，保留符合条件的token
                 _, all_logits = self.forward_main(all_tokens)
                 
-                # 取出需要验证的token对应的logits
-                validation_logits = all_logits[:, -speculative_tokens.shape[1]:]
+                # 第一个token由main模型直接生成，这里只验证后续的mtp token
+                validation_logits = all_logits[:, seq.shape[1]:-1]
+                validation_tokens = speculative_tokens[:, 1:]
                 
                 # 获取各个token在main模型的输出概率
-                accept_probs =  []
+                accept_num = 1
+                if validation_tokens.shape[1] > 0:
+                    accept_probs =  []
 
-                for i in range(speculative_tokens.shape[1]):
-                    logits = validation_logits[:, i] # (batch_size, vocab_size)
-                    probs = torch.softmax(logits, dim=-1) # (batch_size, vocab_size)
-                    token = speculative_tokens[:, i]
-                   
-                    token_prob = probs.gather(1, token.unsqueeze(0))
-                    accept_probs.append(token_prob)
-             
-                # 拼接各个token的生成概率
-                accept_probs = torch.cat(accept_probs, dim=-1)
-                
-                # 保留概率值大于阈值的token, 接受这部分token,否则舍弃（舍弃某个token时，后面的token都要舍弃）
-                # 接受token的掩码
-                accept_mask = (accept_probs > 1e-6)
-                print(f'接受掩码：{accept_mask}')
-                
-                if accept_mask.any():  # [1, 1, 0, 1]  ~accept_mask: [0, 0, 1, 0]
+                    for i in range(validation_tokens.shape[1]):
+                        logits = validation_logits[:, i] # (batch_size, vocab_size)
+                        probs = torch.softmax(logits, dim=-1) # (batch_size, vocab_size)
+                        token = validation_tokens[:, i]
+                       
+                        token_prob = probs.gather(1, token.unsqueeze(1))
+                        accept_probs.append(token_prob)
+                 
+                    # 拼接各个token的生成概率
+                    accept_probs = torch.cat(accept_probs, dim=-1)
+                    
+                    # 保留概率值大于阈值的token, 接受这部分token,否则舍弃（舍弃某个token时，后面的token都要舍弃）
+                    # 接受token的掩码
+                    accept_mask = (accept_probs > 1e-6)
+                    print(f'接受掩码：{accept_mask}')
                     print(f'拒绝掩码：{~accept_mask}')
                     # 获取被拒绝（舍弃）token对应的索引
                     reject_token_index = (~accept_mask).nonzero(as_tuple=True)[1]
@@ -144,18 +162,12 @@ class MTP(nn.Module):
                     # 如果有需要舍弃的token
                     if reject_token_index.shape[0] > 0:
                         
-                        # 找出第一个被舍弃的token的索引，其之前的token是需要保留的，之后的全部舍弃
-                        # 接受token的数量即是第一个被舍弃的token的索引
-                        accept_num = reject_token_index[0]
+                        # 第一个token默认接受，后续接受数量由第一个被拒绝的mtp token决定
+                        accept_num += reject_token_index[0].item()
                     
                     else:
                         # 如果没有需要舍弃的token，则全部接受
                         accept_num = speculative_tokens.shape[1]
-                        
-                    
-                
-                else:
-                    accept_num = 0      
                 
                 
                 if accept_num > 0:
@@ -166,12 +178,12 @@ class MTP(nn.Module):
                     seq = torch.cat([seq, accept_tokens], dim=1)
                 
                 else:
-                    logits = outputs['head_main']
+                    logits = main_head_output
                     
                     logits = logits[:, -1, :]
                     probs = torch.softmax(logits, dim=-1)
                     next_token = torch.argmax(probs, dim=-1)
-                    next_token = next_token.unsqueeze(0)
+                    next_token = next_token.unsqueeze(1)
                 
                     
                     seq = torch.cat([seq, next_token], dim=-1)
@@ -201,7 +213,6 @@ def train(config, model, dataloader, optimizer, writer, device, epochs, print_st
             for index in range(0, config.predict_tokens_num-1):
                 previous_hidden_output, mtp_head_output = model.forward_mtp(input_ids, previous_hidden_output, index)
                 
-                mtp_head_output = mtp_head_output[:, :-(1+index+1)] # [batch_size, seq_len, vocab_size]
                 mtp_head_output = mtp_head_output.reshape(-1, model.main_model.config.vocab_size) # [batch_size * seq_len, vocab_size]
                 
                 target = labels[:, 1+index+1:] # [batch_size, seq_len]
@@ -274,7 +285,7 @@ class MyDataCollator:
         labels = []
         for feature in features:
             input_ids.append(feature['input_ids'] + [self.tokenizer.pad_token_id] * (max_len - len(feature['input_ids'])))
-            labels.append(feature['labels'] + [self.tokenizer.pad_token_id] * (max_len - len(feature['labels'])))
+            labels.append(feature['labels'] + [-100] * (max_len - len(feature['labels'])))
             
         return {'input_ids': torch.tensor(input_ids, dtype=torch.long),
                 'labels': torch.tensor(labels, dtype=torch.long)}
